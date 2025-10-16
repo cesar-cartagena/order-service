@@ -1,35 +1,33 @@
 # src/order_service.py
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union, TypedDict, Optional
 
-OrderDict = Dict[str, int]
+class OrderDict(TypedDict):
+    id: int
+    amount: int
+    priority: bool
 
 
 @dataclass
 class ProcessedOrder:
     id: int
     status: str
-    priority: bool
-
-
-PriorityFlag = Optional[str]
+    priority: bool = False
 
 
 def handle_orders(
-    data: Union[List[OrderDict], PriorityFlag, None],
-) -> Union[List[ProcessedOrder], str]:
+    data: Union[List[OrderDict], None],
+) -> List[ProcessedOrder]:
     results: List[ProcessedOrder] = []
-    for d in data:  # type: ignore[assignment]
-        if "amount" not in d or d["amount"] is None or d["amount"] <= 0:
-            results.append({"id": d.get("id"), "status": "error"})
-            continue
+    if data is not None:
+        for datum in data: 
+            if datum.get("amount") is None or datum.get("amount") <= 0:
+                results.append(ProcessedOrder(id=datum.get("id"), status="error"))
+                continue
+            
+            results.append(ProcessedOrder(id=datum.get("id"), status="ok",priority=datum.get("priority")))
 
-        if d.get("priority") == True:
-            results.append({"id": d["id"], "status": "ok", "priority": True})
-        else:
-            results.append({"id": d["id"], "status": "ok", "priority": False})
-
-    results = sorted(results, key=lambda x: x.get("priority", False))
+        results.sort(key=lambda p: p.priority, reverse=True)
     return results
 
 
